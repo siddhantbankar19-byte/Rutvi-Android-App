@@ -9,32 +9,43 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
-      - uses: actions/setup-java@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
       - name: Extract Android project
         run: unzip -o Rutvi_Android_App_Project.zip
 
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses > /dev/null || true
-
       - name: Install Android SDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          echo "Using SDK manager: $SDKMANAGER"
+          "$SDKMANAGER" --version
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Build APK
-        run: gradle -p Rutvi_Android_App assembleDebug
+        run: gradle -p Rutvi_Android_App assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Rutvi-Automation-Controls-APK
           path: Rutvi_Android_App/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
