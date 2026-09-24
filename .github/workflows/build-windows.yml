@@ -1,0 +1,45 @@
+name: Build Rutvi Windows App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Rutvi_Windows_App_Project.zip'
+      - '.github/workflows/build-windows.yml'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Extract Windows project
+        shell: powershell
+        run: |
+          if (Test-Path Rutvi_Windows_App) { Remove-Item Rutvi_Windows_App -Recurse -Force }
+          Expand-Archive -Path Rutvi_Windows_App_Project.zip -DestinationPath . -Force
+
+      - name: Install dependencies
+        working-directory: Rutvi_Windows_App
+        run: npm install
+
+      - name: Build installer and portable EXE
+        working-directory: Rutvi_Windows_App
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload Windows EXEs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rutvi-Windows-App
+          path: Rutvi_Windows_App/dist/*.exe
+          if-no-files-found: error
